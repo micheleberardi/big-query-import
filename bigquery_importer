@@ -65,19 +65,21 @@ if __name__ == '__main__':
     logging.debug('>>>>> START TRANSACTION <<<<<')
 
     # SECTION DATABASE MYSQL
-    mydb = pymysql.connect(host='10.200.40.28', user='tats', passwd='tats', db='bucksense_fb_ads', use_unicode=True,
+    mydb = pymysql.connect(host='10.XX.XX.XX', user='michelone', passwd='xxxxxx', db='db_ads', use_unicode=True,
                            charset="utf8")
     cursor = mydb.cursor()
     logging.debug('>>>>> check the database')
 
     # QUERY MYSQL
     result1 = query()
+    
     # PARSE JSON FROM MYSQL FUNCTION
     data = json.loads(result1)
     str = json.dumps(data)
     parsed = json.loads(str)
     with open('data.json', 'w') as f:
         ndjson.dump(parsed, f)
+        
     # IMPORT INTO BIG QUERY
     filename = 'data.json'
     client = bigquery.Client(project="bucksense-rtb")
@@ -85,6 +87,8 @@ if __name__ == '__main__':
     table_id = 'ads_manager'
     dataset_ref = client.dataset(dataset_id)
     table_ref = dataset_ref.table(table_id + "$" + date_query)
+    
+    # ACTION INTO BIG QUERY
     job_config = bigquery.LoadJobConfig()
     job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE.partition(date_query)
     job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
