@@ -81,7 +81,7 @@ if __name__ == '__main__':
         
     # IMPORT INTO BIG QUERY
     filename = 'data.json'
-    client = bigquery.Client(project="bucksense-rtb")
+    client = bigquery.Client(project="bigquery-rtb")
     dataset_id = 'adwords'
     table_id = 'ads_manager'
     dataset_ref = client.dataset(dataset_id)
