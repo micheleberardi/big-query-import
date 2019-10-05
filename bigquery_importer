@@ -23,7 +23,7 @@ from googleadwords.googleapi.bigquery.google.cloud import bigquery
 # FUNCTION QUERY MYSQL
 def query():
     cursor.execute(
-        "select insert_date, date, account_id, account_name, account_time_zone_id, account_time_zone_name, account_time_zone_offset_hours_utc, hourly_stats_aggregated_by_advertiser_time_zone, campaign_id, campaign_name, adset_id, adset_name, ads_id, ads_name, clicks, impressions, frequency, unique_clicks, spend,cost_per_inline_link_click ,inline_link_clicks,reach, objective, cpc, cpm, cpp, ctr, conversions, source,md5string FROM bucksense_fb_ads.ads_manager_unique where date between '" + date_start + "' and '" + date_start + "'")
+        "select insert_date, date, account_id, account_name, account_time_zone_id, account_time_zone_name, account_time_zone_offset_hours_utc, hourly_stats_aggregated_by_advertiser_time_zone, campaign_id, campaign_name, adset_id, adset_name, ads_id, ads_name, clicks, impressions, frequency, unique_clicks, spend,cost_per_inline_link_click ,inline_link_clicks,reach, objective, cpc, cpm, cpp, ctr, conversions, source,md5string FROM db_ads.ads_manager_unique where date between '" + date_start + "' and '" + date_start + "'")
     row_headers = [x[0] for x in cursor.description]  # this will extract row headers
     data = cursor.fetchall()
     json_data = []
@@ -34,7 +34,6 @@ def query():
 
 if __name__ == '__main__':
     # SECTION PARAMETERS
-
     os.environ[
         "GOOGLE_APPLICATION_CREDENTIALS"] = "/google-123445.json"
 
