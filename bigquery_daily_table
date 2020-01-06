@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Michele Berardi"
-__copyright__ = "Copyright 2018, "
+__copyright__ = "Copyright 2020, "
 __license__ = "GPL"
 __version__ = "1.0.1"
 __maintainer__ = "Michele Berardi"
-__email__ = "michele.berardi@bucksense.com"
+__email__ = "michele@linux.com"
 __status__ = "Production"
 
 import json
@@ -21,8 +21,7 @@ import pymysql
 from dateutil.relativedelta import relativedelta
 from googleadwords.googleapi.bigquery.google.cloud import bigquery
 
-#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/var/www/html/source/bucksense_bigquery_connector/init/bucksense-rtb-199a0153cd93.json"
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "init/bucksense-rtb-199a0153cd93.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "init/google-199a0153cd93.json"
 
 # TIME NOW
 datenow = datetime.now().strftime('%Y-%m-%d')
@@ -42,7 +41,7 @@ try:
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)-8s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
-                        filename='/var/www/html/source/bucksense_bigquery_connector/logs/app.log', filemode='a')
+                        filename='/var/www/html/source/bigquery_connector/logs/app.log', filemode='a')
 except:
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)-8s %(message)s',
@@ -50,7 +49,7 @@ except:
                         filename='logs/app.log', filemode='a')
 logging.debug('>>>>> START TRANSACTION <<<<<')
 
-mydb = pymysql.connect(host='10.200.40.28', user='tats', passwd='tats', db='bucksense_fb_ads', use_unicode=True,
+mydb = pymysql.connect(host='10.x.x.x', user='michelone', passwd='michelone', db='database_name', use_unicode=True,
                        charset="utf8")
 cursor = mydb.cursor()
 
@@ -60,7 +59,7 @@ logging.debug('>>>>> check the database')
 # FUNCTION QUERY MYSQL
 def query():
     cursor.execute(
-        "select insert_date,date,company_id,company_name FROM bucksense_bigquery_connector.campaign_structure_1 where date between '" + date_start + "' and '" + date_start + "'")
+        "select insert_date,date,company_id,company_name FROM database_name.yable_name where date between '" + date_start + "' and '" + date_start + "'")
     row_headers = [x[0] for x in cursor.description]  # this will extract row headers
     data = cursor.fetchall()
     json_data = []
@@ -80,8 +79,8 @@ if __name__ == '__main__':
         ndjson.dump(parsed, f)
     # IMPORT INTO BIG QUERY
     filename = 'data.json'
-    client = bigquery.Client(project="bucksense-rtb")
-    dataset_id = 'directopub_demo'
+    client = bigquery.Client(project="client-rtb")
+    dataset_id = 'dataset_demo'
     table_id = 'test_daily_'+date_query
     dataset_ref = client.dataset(dataset_id)
     table_ref = dataset_ref.table(table_id)
@@ -115,7 +114,7 @@ if __name__ == '__main__':
     if job.output_rows == 0:
         report = (
             "*BIG QUERY 1* Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "-" + date_start))
-        webhook_url = 'https://hooks.slack.com/services/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'
+        webhook_url = 'https://hooks.slack.com/services/token_slack'
         slack_report = {"attachments": [
             {
                 "fallback": "*BIG QUERY 1*",
@@ -124,7 +123,7 @@ if __name__ == '__main__':
     else:
         report = (
             "*BIG QUERY 1* Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "-" + date_start))
-        webhook_url = 'https://hooks.slack.com/services/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'
+        webhook_url = 'https://hooks.slack.com/services/token_slack'
         slack_report = {"attachments": [
             {
                 "fallback": "*BIG QUERY 1*",
