@@ -6,92 +6,153 @@ __copyright__ = "Copyright 2018, "
 __license__ = "GPL"
 __version__ = "1.0.1"
 __maintainer__ = "Michele Berardi"
-__email__ = "michele@berardi.com"
+__email__ = "michele@linux.com"
 __status__ = "Production"
 
-import json
+
+
 import logging
-import os
-import time
-from datetime import datetime
-import ndjson
 import pymysql
+import os
+import sys
+import socket
+import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from googleadwords.googleapi.bigquery.google.cloud import bigquery
+import json
+import ndjson
+from google.cloud import bigquery
+from modules import class_slack
 
-
-# FUNCTION QUERY MYSQL
-def query():
-    cursor.execute(
-        "select insert_date, date, account_id, account_name, account_time_zone_id, account_time_zone_name, account_time_zone_offset_hours_utc, hourly_stats_aggregated_by_advertiser_time_zone, campaign_id, campaign_name, adset_id, adset_name, ads_id, ads_name, clicks, impressions, frequency, unique_clicks, spend,cost_per_inline_link_click ,inline_link_clicks,reach, objective, cpc, cpm, cpp, ctr, conversions, source,md5string FROM db_ads.ads_manager_unique where date between '" + date_start + "' and '" + date_start + "'")
-    row_headers = [x[0] for x in cursor.description]  # this will extract row headers
-    data = cursor.fetchall()
-    json_data = []
-    for result in data:
-        json_data.append(dict(zip(row_headers, result)))
-    return json.dumps(json_data, indent=4, sort_keys=False, default=str, *'')
-
+# CHECK PID
+def get_lock(process_name):
+    get_lock._lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    try:
+        get_lock._lock_socket.bind('\0' + process_name)
+        print ('WRITE THE PID')
+        logging.info("WRITE THE PID")
+    except socket.error:
+        print ('PID ALREADY EXIST')
+        logging.error("PID ALREADY EXIST")
+        sys.exit(0)
 
 if __name__ == '__main__':
-    # SECTION PARAMETERS
-    os.environ[
-        "GOOGLE_APPLICATION_CREDENTIALS"] = "/google-123445.json"
+#######################################################################################################
+#CONFIG SECTION
+    ENV = (os.path.dirname(os.path.realpath(__file__)))
 
-    # TIME NOW
-    datenow = datetime.now().strftime('%Y-%m-%d')
-    date2 = datetime.today() + relativedelta(days=0)
-    date3 = datetime.today() + relativedelta(days=0)
-    date_start = date2.strftime('%Y-%m-%d')
-    date_end = date3.strftime('%Y-%m-%d')
-    date_query = date2.strftime('%Y%m%d')
-    print("START DATE ", date_start)
-    print("END DATE ", date_end)
+# SLACK LOGS NOTIFICATION 0=OFF 1=ON
+    slack = 1
 
-    # START TIME
-    start = time.time()
+# SECTION LOGS
+    datelog = datetime.now().strftime('%Y-%m-%d')
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)-8s %(message)s',
+                        datefmt='%a, %d %b %Y %H:%M:%S',
+                        filename=ENV + "/logs/michelone-logs" + datelog + ".log", filemode='a')
 
-    # SECTION LOG
-    try:
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)-8s %(message)s',
-                            datefmt='%a, %d %b %Y %H:%M:%S',
-                            filename='/var/www/html/source/ads_manager/logs/app.log', filemode='a')
-    except:
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)-8s %(message)s',
-                            datefmt='%a, %d %b %Y %H:%M:%S',
-                            filename='logs/app.log', filemode='a')
-    logging.debug('>>>>> START TRANSACTION <<<<<')
-
-    # SECTION DATABASE MYSQL
-    mydb = pymysql.connect(host='10.XX.XX.XX', user='michelone', passwd='xxxxxx', db='db_ads', use_unicode=True,
-                           charset="utf8")
+#DATABASE
+    mydb = pymysql.connect(host='10.xx.xx.xx', user='username', passwd='password', db='database_name',use_unicode=True, charset="utf8")
     cursor = mydb.cursor()
-    logging.debug('>>>>> check the database')
+# LICENSE
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ENV+"/michelone-token-api.json"
 
-    # QUERY MYSQL
-    result1 = query()
-    
-    # PARSE JSON FROM MYSQL FUNCTION
-    data = json.loads(result1)
-    str = json.dumps(data)
-    parsed = json.loads(str)
-    with open('data.json', 'w') as f:
-        ndjson.dump(parsed, f)
-        
-    # IMPORT INTO BIG QUERY
-    filename = 'data.json'
-    client = bigquery.Client(project="bigquery-rtb")
-    dataset_id = 'adwords'
-    table_id = 'ads_manager'
-    dataset_ref = client.dataset(dataset_id)
-    table_ref = dataset_ref.table(table_id + "$" + date_query)
-    
-    # ACTION INTO BIG QUERY
-    job_config = bigquery.LoadJobConfig()
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE.partition(date_query)
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    with open(filename, "rb") as source_file:
-        job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
-    job.result()  # Waits for table load to complete.
-    print("Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "$" + date_start))
+# PANIC STATUS
+    panic_status = 1  # 1 = ON /// 0 = OFF
+#######################################################################################################
+
+# CHECK PROCESS PID
+    logging.info("****START****")
+    #check_pid = get_lock('core.py')
+
+# DATE SECTION
+    if panic_status == 0:
+        logging.info("PANIC STATUS ON")
+        sys.exit(0)
+    else:
+        date3 = datetime.today() + relativedelta(days=-5)
+        date4 = datetime.today() + relativedelta(days=1)
+        startdate_loop = date3.strftime('%Y-%m-%d')
+        enddate_loop = date4.strftime('%Y-%m-%d')
+        start = datetime.strptime(startdate_loop, "%Y-%m-%d")
+        end = datetime.strptime(enddate_loop, "%Y-%m-%d")
+        date_generated = [start + timedelta(days=x) for x in range(0, (end - start).days)]
+        print(date_generated)
+        for date in date_generated:
+            print(date)
+            date_start = date.strftime('%Y-%m-%d 00:00:00')
+            date_end = date.strftime('%Y-%m-%d 23:59:59')
+            data_bigquery = (date.strftime('%Y-%m-%d'))
+            date_query = date.strftime('%Y%m%d')
+
+# SECTION IMPORT TABLE bucksense_fb_ads
+            logging.info("**************************")
+            try:
+                '''
+                SELECT INTO MYSQL
+                '''
+                table = 'table_name_mysql'
+                logging.info(str(table) + " INTO BIG QUERY")
+                # select_json = get_json(table_name[0],start_date,end_date)
+                cursor.execute(
+                    "SELECT * from " + str(table) + " where date between '" + date_start + "' and '" + date_end + "'")
+                sql = "SELECT * from " + str(table) + " where date between '" + date_start + "' and " + date_end + "'"
+                print(sql)
+                mydb.commit()
+                row_headers = [x[0] for x in cursor.description]
+                data = cursor.fetchall()
+                # result = cursor.fetchall()
+                if len(data) == 0:
+                    print("QUERY=0")
+                    continue
+                else:
+                    json_data = []
+                    for result in data:
+                        json_data.append(dict(zip(row_headers, result)))
+                    result1 = json.dumps(json_data, indent=4, sort_keys=False, default=str, *'')
+                    # PARSE JSON
+                    data = json.loads(result1)
+                    str1 = json.dumps(data)
+                    parsed = json.loads(str1)
+                    with open('data' + str(table) + '.json', 'w') as f:
+                        ndjson.dump(parsed, f)
+                    filename = 'data' + str(table) + '.json'
+                    print(filename)
+                    """
+                    BIQ QUERY IMPORT
+                    """
+                    client = bigquery.Client(project="michelone-123")
+                    dataset_id = 'michelone-set'
+                    table_id = str(table) + '_one'
+                    dataset_ref = client.dataset(dataset_id)
+                    table_ref = dataset_ref.table(table_id + "$" + date_query)
+                    # table_ref = dataset_ref.table(table_id)
+                    job_config = bigquery.LoadJobConfig()
+                    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE.partition(date_query)
+                    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+                    with open(filename, "rb") as source_file:
+                        job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
+                        print(job.job_id)
+                        print("Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "$" + date_query))
+                    job.result()  # Waits for table load to complete.
+                    print("Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "$" + date_query))
+                    logging.info("JOB ID " + str(job.job_id))
+                    logging.info(
+                        "Loaded {} rows into {}:{}.".format(job.output_rows, dataset_id, table_id + "$" + date_query))
+                    json_data.clear()
+                    os.system("rm -rf " + ENV + "/data*json")
+                    logging.info("DONE " + str(table) + " INTO BIG QUERY")
+                    logging.info("**************************")
+            except:
+                logging.error("ERROR MICHELONE " + str(table) + " INTO BIG QUERY")
+                result_dict = (
+                        "*MICHELONE* \n*ERROR* " + str(table) + " *INTO BIG QUERY*\n")
+                slack_report = {
+                    "attachments": [{"fallback": "*MICHELONE*", "color": "#FF0000", "text": result_dict}]}
+                if slack == 1:
+                    slack_push_log = class_slack.Slack2(slack_report)
+                    continue
+                else:
+                    continue
+        logging.info("*********DONE*************")
+
