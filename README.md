@@ -9,6 +9,7 @@ It is cost-effective, highly and easily scalable, serverless and pretty much wor
 
 # BIG-QUERY-DAILY-TABLE
 **bigquery_daily_table.py**
+* select into mysql and import data in BigQuery
 * script to create a daily partition
 
 # BIG-QUERY-IMPORTER-TABLE-UPDATE
